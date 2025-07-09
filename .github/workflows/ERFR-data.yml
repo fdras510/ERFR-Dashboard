@@ -20,18 +20,13 @@ jobs:
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: |
-            dplyr
             httr
-            readr
-            ggplot2
-            lubridate
-            purrr
-            tidyr
+            tidyverse
             janitor
             openxlsx
             plotly
             reactable
-            reactablefmtr
+            
 
       - name: Run the R script
         run: Rscript pit_antenna_dashboard_data.R
