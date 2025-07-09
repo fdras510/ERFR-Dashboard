@@ -1,19 +1,12 @@
 #Daily PIT antenna data
 library(leaflet)
-library(dplyr)
 library(httr)
-library(readr)
-library(ggplot2)
-library(lubridate)
-library(purrr)
-library(tidyr)
+library(tidyverse)
 library(janitor)
 library(openxlsx)
-library(ggrid)
 library(taskscheduleR)
 library(plotly)
 library(reactable)
-#library(reactablefmtr)
 
 
 #Interrogation data
