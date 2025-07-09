@@ -34,6 +34,7 @@ daily_summary <- daily_summary|>
   mutate(species = case_when(
     species == "Chinook" & rear_type == "Wild Fish or Natural Production" ~ "Wild Chinook",
     species == "Chinook" & rear_type == "Hatchery Reared" ~ "Hatchery Chinook",
+    species == "Chinook" & rear_type == "Unknown" ~ "Unk. origin Chinook",
     species == "Steelhead" & rear_type == "Wild Fish or Natural Production" ~ "Wild Steelhead",
     species == "Steelhead" & rear_type == "Hatchery Reared" ~ "Hatchery Steelhead",
     TRUE ~ species
@@ -54,13 +55,12 @@ daily_summary <- daily_summary |>
 antenna_plot <- ggplot(daily_summary,aes(x = date, y = total_tags, fill = species)) +
   geom_bar(position = "stack", stat = "identity") + 
   labs(x = "Date", y = "Total tags", fill = "Species") +
-  scale_fill_viridis_d() +
+  scale_fill_viridis_d(direction = -1) +
   facet_wrap(~site)
 antenna_plot
 
 antenna_plotly <- ggplotly(antenna_plot)
 antenna_plotly
-
 
 #Timer Tag Data
 timer.tags <- 'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_timer_tag.csv'#Read in csv from PTAGIS
