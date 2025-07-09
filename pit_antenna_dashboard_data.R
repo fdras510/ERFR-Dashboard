@@ -13,7 +13,7 @@ library(ggrid)
 library(taskscheduleR)
 library(plotly)
 library(reactable)
-library(reactablefmtr)
+#library(reactablefmtr)
 
 
 #Interrogation data
