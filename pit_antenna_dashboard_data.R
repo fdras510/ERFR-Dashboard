@@ -169,7 +169,4 @@ Timer_tags
 saveRDS(Timer_tags, "data/uptime_data.rds")
 saveRDS(antenna_plot, "data/antenna_plot.rds")
 
-#saveRDS(Timer_tags, "C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard/data/uptime_data.rds")
-#saveRDS(antenna_plot, "C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard/data/antenna_plot.rds")
-
 saverd
