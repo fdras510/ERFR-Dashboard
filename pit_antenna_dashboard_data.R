@@ -1,11 +1,4 @@
 #Daily PIT antenna data
-library(httr)
-library(tidyverse)
-library(janitor)
-library(openxlsx)
-library(plotly)
-library(reactable)
-
 getwd()
 
 #Interrogation data
