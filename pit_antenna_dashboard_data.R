@@ -7,6 +7,7 @@ library(openxlsx)
 library(plotly)
 library(reactable)
 
+
 #Interrogation data
 int_data <- 'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_interrogation_summary.csv'#use
 interrogation_sum <- read_csv(
@@ -165,7 +166,10 @@ uptime <- uptime |>
 Timer_tags <- reactable(uptime, defaultPageSize = 25)
 Timer_tags
 
-saveRDS(Timer_tags, "C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard/data/uptime_data.rds")
-saveRDS(antenna_plot, "C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard/data/antenna_plot.rds")
+saveRDS(Timer_tags, "data/uptime_data.rds")
+saveRDS(antenna_plot, "data/antenna_plot.rds")
+
+#saveRDS(Timer_tags, "C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard/data/uptime_data.rds")
+#saveRDS(antenna_plot, "C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard/data/antenna_plot.rds")
 
 saverd
