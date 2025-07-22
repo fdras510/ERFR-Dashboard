@@ -3,12 +3,23 @@ getwd()
 
 #Interrogation data
 int_data <- 'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_interrogation_summary.csv'#use
+
+# interrogation_sum <- read_csv(
+#   file = int_data,
+#   locale = locale(encoding = "UTF-16"),
+#   col_types = cols(.default = "c"))
+
+
+interrogation_sum_t <- GET(int_data)
 interrogation_sum <- read_csv(
-  file = int_data,
-  locale = locale(encoding = "UTF-16"),
-  col_types = cols(.default = "c"))
+  file      = rawConnection(content(interrogation_sum_t, "raw")),
+  locale    = locale(encoding = "UTF-16"),
+  col_types = cols(.default = "c")
+)
+
 interrogation_sum <- interrogation_sum[,-c(13)]
 interrogation_sum <- clean_names(interrogation_sum)
+
 interrogation_sum <- interrogation_sum %>%
   mutate(first_time = as.Date(mdy_hms(first_time)),
          last_time = as.Date(mdy_hms(last_time)))
@@ -57,11 +68,20 @@ antenna_plotly
 
 #Timer Tag Data
 timer.tags <- 'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_timer_tag.csv'#Read in csv from PTAGIS
+timer.tags <- GET(timer.tags)
 timer.data <- read_csv(
-  file = timer.tags,
-  locale = locale(encoding = "UTF-16"),
+  file      = rawConnection(content(timer.tags, "raw")),
+  locale    = locale(encoding = "UTF-16"),
   col_types = cols(.default = "c")
 )
+
+
+
+# timer.data <- read_csv(
+#   file = timer.tags,
+#   locale = locale(encoding = "UTF-16"),
+#   col_types = cols(.default = "c")
+# )
 timer.data <- clean_names(timer.data) 
 timer.data <- timer.data[-c(1),]
 timer.data <- timer.data |>
