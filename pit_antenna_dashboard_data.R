@@ -1,5 +1,4 @@
 #Daily PIT antenna data
-library(leaflet)
 library(httr)
 library(tidyverse)
 library(janitor)
@@ -7,6 +6,7 @@ library(openxlsx)
 library(plotly)
 library(reactable)
 
+getwd()
 
 #Interrogation data
 int_data <- 'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_interrogation_summary.csv'#use
