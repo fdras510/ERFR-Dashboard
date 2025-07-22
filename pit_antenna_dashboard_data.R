@@ -7,12 +7,12 @@ library(openxlsx)
 library(plotly)
 library(reactable)
 
-
 #Interrogation data
 int_data <- 'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_interrogation_summary.csv'#use
-download_path <- file.path("C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard", basename(URLdecode(int_data)))
-GET(int_data, write_disk(download_path, overwrite = TRUE))
-interrogation_sum <- read_csv(download_path, locale = locale(encoding = "UTF-16"))
+interrogation_sum <- read_csv(
+  file = int_data,
+  locale = locale(encoding = "UTF-16"),
+  col_types = cols(.default = "c"))
 interrogation_sum <- interrogation_sum[,-c(13)]
 interrogation_sum <- clean_names(interrogation_sum)
 interrogation_sum <- interrogation_sum %>%
@@ -63,25 +63,25 @@ antenna_plotly
 
 #Timer Tag Data
 timer.tags <- 'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_timer_tag.csv'#Read in csv from PTAGIS
-download_path <- file.path("C:/Users/glassefr/OneDrive - Oregon/PIT Antenna Project/Shiny Apps/Fish_Dashboard", basename(URLdecode(timer.tags)))
-download.file(timer.tags, destfile = download_path, mode = "wb")
-timer.data <- read.csv(download_path, colClasses = "character",
-                       fileEncoding = "UTF-16",
-                       sep = ",",
-                       header = TRUE)
+timer.data <- read_csv(
+  file = timer.tags,
+  locale = locale(encoding = "UTF-16"),
+  col_types = cols(.default = "c")
+)
 timer.data <- clean_names(timer.data) 
 timer.data <- timer.data[-c(1),]
 timer.data <- timer.data |>
   rename(
     date = metrics
   ) 
+
 timer.data <- timer.data |>
   mutate(date= as.Date(date, format = "%m/%d/%Y"))
 timer.data <- timer.data |>
-  mutate(across(timer_tag_count:timer_tag_count_23, as.numeric))
+  mutate(across(timer_tag_count_5:timer_tag_count_28, as.numeric))
 timers2 <- timer.data %>%
   group_by(site_code, antenna,date) %>%  #antenna, 
-  summarize(tag.cts = sum(rowSums(across(timer_tag_count:timer_tag_count_23))), .groups = "drop")
+  summarize(tag.cts = sum(rowSums(across(timer_tag_count_5:timer_tag_count_28))), .groups = "drop")
 timers3 <- timers2 |>
   mutate(date = floor_date(date, "day")) |>
   group_by(site_code, antenna, date) |>
