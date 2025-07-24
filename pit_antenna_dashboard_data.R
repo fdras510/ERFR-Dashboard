@@ -184,5 +184,3 @@ Timer_tags
 
 saveRDS(Timer_tags, "data/uptime_data.rds")
 saveRDS(antenna_plot, "data/antenna_plot.rds")
-
-saverd
