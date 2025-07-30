@@ -183,4 +183,4 @@ Timer_tags <- reactable(uptime, defaultPageSize = 25)
 Timer_tags
 
 saveRDS(Timer_tags, "data/uptime_data.rds")
-saveRDS(antenna_plot, "data/antenna_plot.rds")
+saveRDS(antenna_plotly, "data/antenna_plot.rds")
