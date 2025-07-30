@@ -2,6 +2,8 @@ library(httr)
 library(rvest)
 library(readr)
 library(lubridate)
+library(tidyverse)
+library(dataRetrieval)
 
 #Mean Daily Flow
 # 1. Compute date range
@@ -45,6 +47,17 @@ inst_flow_url_ugr <- paste0(
   "&format=csv"
 )
 
+#UGR Clear Creek temperature data
+inst_temp_url_ugr <- paste0(
+  "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
+  "?station_nbr=13317850",
+  "&start_date=", URLencode(fmt(start_date)),
+  "&end_date=",   URLencode(fmt(end_date)),
+  "&dataset=WTEMP15",
+  "&format=html&units=C"
+)
+ugr_inst_temp <- read.csv(inst_temp_url_ugr, sep="\t", row.names=NULL)
+
 # 3. Read it in one shot
 ugr_inst_flow <- read.csv(inst_flow_url_ugr, sep="\t", row.names=NULL)
 ugr_inst_flow <- ugr_inst_flow |>
@@ -72,6 +85,19 @@ mdc_inst_flow <- mdc_inst_flow |>
          Date = station_nbr) #Rename station_nbr to Date
 mdc_inst_flow <- mdc_inst_flow |>
   mutate(Date = mdy_hm(Date, tz = "America/Los_Angeles")) #Assign date to POSIXct format
+
+#Meadow Creek below Dark Canyon temperature data
+inst_temp_url_mdc <- paste0(
+  "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
+  "?station_nbr=13318210",
+  "&start_date=", URLencode(fmt(start_date)),
+  "&end_date=",   URLencode(fmt(end_date)),
+  "&dataset=WTEMP15",
+  "&format=html&units=C"
+)
+mdc_inst_temp <- read.csv(inst_temp_url_mdc, sep="\t", row.names=NULL)
+
+
 mdc_flow_plot <- ggplot(mdc_inst_flow, aes(x=Date, y=CFS)) +
   geom_line(color="blue")
 mdc_flow_plot
@@ -99,6 +125,36 @@ lostine_flow_plot <-ggplot(los_inst_flow, aes(x=Date,y=CFS)) +
   geom_line(color="blue")
 lostine_flow_plot
 
+#Lostine near Lostine River Ranch (Water & Temp data) 
+#River data
+inst_flow_url_lostine_ranch <- paste0(
+  "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
+  "?station_nbr=13330000",
+  "&start_date=", URLencode(fmt(start_date)),
+  "&end_date=",   URLencode(fmt(end_date)),
+  "&dataset=Instantaneous_Flow",
+  "&format=csv"
+)
+los_ranch_inst_flow <- read.csv(inst_flow_url_lostine, sep="\t", row.names=NULL)
+los_ranch_inst_flow <- los_ranch_inst_flow |>
+  rename(CFS = record_date,
+         Date = station_nbr)
+los_ranch_inst_flow <- los_ranch_inst_flow %>%
+  mutate(
+    Date = mdy_hm(Date, tz = "America/Los_Angeles"))
+
+#Temperature data
+inst_temp_url_los <- paste0(
+  "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
+  "?station_nbr=13330000",
+  "&start_date=", URLencode(fmt(start_date)),
+  "&end_date=",   URLencode(fmt(end_date)),
+  "&dataset=WTEMP15",
+  "&format=html&units=C"
+)
+los_ranch_inst_temp <- read.csv(inst_temp_url_los, sep="\t", row.names=NULL)
+
+
 #Catherine Creek near Union
 inst_flow_url_cc <- paste0(
   "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
@@ -118,23 +174,32 @@ cc_flow_plot <- ggplot(cc_inst_flow, aes(x=Date, y = CFS)) +
   geom_line(color="blue")
 cc_flow_plot
 
-
-#Minam - Mean Daily Flow only
-inst_flow_url_minam <- paste0(
+#Catherine Creek near Union temperature data
+inst_temp_url_cc <- paste0(
   "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
-  "?station_nbr=13331500",
+  "?station_nbr=13320000",
   "&start_date=", URLencode(fmt(start_date)),
   "&end_date=",   URLencode(fmt(end_date)),
-  "&dataset=MDF",
-  "&format=csv"
+  "&dataset=WTEMP15",
+  "&format=html&units=C"
 )
-minam_mean_daily_flow <- read.csv(inst_flow_url_minam, sep="\t", row.names=NULL)
-minam_mean_daily_flow <- minam_mean_daily_flow |>
-  rename(Date = record_date,
-         CFS = mean_daily_flow_cfs)
-minam_mean_daily_flow <- minam_mean_daily_flow |>
-  mutate(Date = mdy(Date, tz = "America/Los_Angeles"))
-minam_flow <- ggplot(minam_mean_daily_flow, aes(x=Date, y=CFS)) +
-  geom_line(color="blue") +
-  labs(x = "Date", y = "Mean Daily Flow (CFS)")
-minam_flow
+cc_inst_temp <- read.csv(inst_temp_url_cc, sep="\t", row.names=NULL)
+
+#Minam - Mean Daily Flow only
+site_id <-13331500
+parameter_code <- c(00060,00010)
+usgs_time <- as.character(Sys.Date()-7)
+inst_flow_url_minam <- read_waterdata_latest_continuous(
+  monitoring_location_id =  "USGS-13331500",
+  parameter_code =  c("00060","00010"),
+  time = "P7D",
+  skipGeometry = TRUE)
+head(inst_flow_url_minam)
+
+inst_flow_url_minam <- readNWISuv(
+  siteNumbers = "13331500",
+  parameterCd = c("00060","00010"),
+  startDate = start_date,
+  endDate = end_date
+)
+inst_flow_url_minam <- renameNWISColumns(inst_flow_url_minam)
