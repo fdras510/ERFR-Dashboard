@@ -4,28 +4,28 @@ library(readr)
 library(lubridate)
 library(tidyverse)
 library(dataRetrieval)
+library(viridis)
+library(viridisLite)
+
 
 #Mean Daily Flow
 # 1. Compute date range
-end_date   <- Sys.Date()
-start_date <- end_date - 7
-fmt        <- function(x) format(x, "%m/%d/%Y 12:00:00 AM")
-
-# 2. Build CSV URL (ensuring zero‑padding and %20)
-flow_url_csv <- paste0(
-  "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
-  "?station_nbr=13317850",
-  "&start_date=", URLencode(fmt(start_date)),
-  "&end_date=",   URLencode(fmt(end_date)),
-  "&dataset=MDF",
-  "&format=csv"
-)
-
-# 3. Read it in one shot
-flow_tbl <- read.csv(flow_url_csv, sep="\t", row.names=NULL)
-
+# end_date   <- Sys.Date()
+# start_date <- end_date - 7
+# fmt        <- function(x) format(x, "%m/%d/%Y 12:00:00 AM")
+# # 2. Build CSV URL (ensuring zero‑padding and %20)
+# flow_url_csv <- paste0(
+#   "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx",
+#   "?station_nbr=13317850",
+#   "&start_date=", URLencode(fmt(start_date)),
+#   "&end_date=",   URLencode(fmt(end_date)),
+#   "&dataset=MDF",
+#   "&format=csv"
+# )
+# # 3. Read it in one shot
+# flow_tbl <- read.csv(flow_url_csv, sep="\t", row.names=NULL)
 # 4. Inspect
-print(head(flow_tbl))
+#print(head(flow_tbl))
 
 
 
@@ -58,6 +58,18 @@ inst_temp_url_ugr <- paste0(
 )
 ugr_inst_temp <- read.csv(inst_temp_url_ugr, sep="\t", row.names=NULL)
 
+ugr_inst_temp <- ugr_inst_temp |>
+  rename(Date = record_date,
+         Temp_C = instantaneous_water_temp_C.)
+ugr_inst_temp <- ugr_inst_temp |>
+  mutate(Date = mdy_hm(Date, tz = "America/Los_Angeles"))
+
+ugr_temp_plot <- ggplot(ugr_inst_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+  geom_line(linewidth = 1) +
+  scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+  theme_minimal()
+ugr_temp_plot
+
 # 3. Read it in one shot
 ugr_inst_flow <- read.csv(inst_flow_url_ugr, sep="\t", row.names=NULL)
 ugr_inst_flow <- ugr_inst_flow |>
@@ -85,6 +97,9 @@ mdc_inst_flow <- mdc_inst_flow |>
          Date = station_nbr) #Rename station_nbr to Date
 mdc_inst_flow <- mdc_inst_flow |>
   mutate(Date = mdy_hm(Date, tz = "America/Los_Angeles")) #Assign date to POSIXct format
+mdc_flow_plot <- ggplot(mdc_inst_flow, aes(x=Date, y=CFS)) +
+  geom_line(color="blue")
+mdc_flow_plot
 
 #Meadow Creek below Dark Canyon temperature data
 inst_temp_url_mdc <- paste0(
@@ -97,12 +112,17 @@ inst_temp_url_mdc <- paste0(
 )
 mdc_inst_temp <- read.csv(inst_temp_url_mdc, sep="\t", row.names=NULL)
 
+mdc_inst_temp <- mdc_inst_temp |>
+  rename(Date = record_date,
+         Temp_C = instantaneous_water_temp_C.)
+mdc_inst_temp <- mdc_inst_temp |>
+  mutate(Date = mdy_hm(Date, tz = "America/Los_Angeles"))
 
-mdc_flow_plot <- ggplot(mdc_inst_flow, aes(x=Date, y=CFS)) +
-  geom_line(color="blue")
-mdc_flow_plot
-
-
+mdc_temp_plot <- ggplot(mdc_inst_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+  geom_line(linewidth = 1) +
+  scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+  theme_minimal()
+mdc_temp_plot
 
 #Lostine at Baker Rd
 inst_flow_url_lostine <- paste0(
@@ -142,6 +162,9 @@ los_ranch_inst_flow <- los_ranch_inst_flow |>
 los_ranch_inst_flow <- los_ranch_inst_flow %>%
   mutate(
     Date = mdy_hm(Date, tz = "America/Los_Angeles"))
+los_ranch_flow_plot <-ggplot(los_ranch_inst_flow, aes(x=Date,y=CFS)) +
+  geom_line(color="blue")
+los_ranch_flow_plot
 
 #Temperature data
 inst_temp_url_los <- paste0(
@@ -153,7 +176,17 @@ inst_temp_url_los <- paste0(
   "&format=html&units=C"
 )
 los_ranch_inst_temp <- read.csv(inst_temp_url_los, sep="\t", row.names=NULL)
+los_ranch_inst_temp <- los_ranch_inst_temp |>
+  rename(Date = record_date,
+         Temp_C = instantaneous_water_temp_C.)
+los_ranch_inst_temp <- los_ranch_inst_temp |>
+  mutate(Date = mdy_hm(Date, tz = "America/Los_Angeles"))
 
+los_ranch_temp <- ggplot(los_ranch_inst_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+  geom_line(linewidth = 1) +
+  scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+  theme_minimal()
+los_ranch_temp
 
 #Catherine Creek near Union
 inst_flow_url_cc <- paste0(
@@ -184,6 +217,16 @@ inst_temp_url_cc <- paste0(
   "&format=html&units=C"
 )
 cc_inst_temp <- read.csv(inst_temp_url_cc, sep="\t", row.names=NULL)
+cc_inst_temp <- cc_inst_temp |>
+  rename(Date = record_date,
+         Temp_C = instantaneous_water_temp_C.)
+cc_inst_temp <- cc_inst_temp |>
+  mutate(Date = mdy_hm(Date, tz = "America/Los_Angeles"))
+cc_temp_plot <- ggplot(cc_inst_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+  geom_line(linewidth = 1) +
+  scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+  theme_minimal()
+cc_temp_plot
 
 #Minam - Mean Daily Flow only
 site_id <-13331500
@@ -203,3 +246,37 @@ inst_flow_url_minam <- readNWISuv(
   endDate = end_date
 )
 inst_flow_url_minam <- renameNWISColumns(inst_flow_url_minam)
+inst_flow_url_minam <- inst_flow_url_minam |>
+  rename(Date = dateTime,
+         Temp_C = Wtemp_Inst,
+         CFS = Flow_Inst)
+minam_flow <- inst_flow_url_minam |>
+  select(site_no, Date, CFS)
+minam_temp <- inst_flow_url_minam |>
+  select(site_no, Date, Temp_C)
+
+minam_flow_plot <- ggplot(minam_flow, aes(x=Date, y = CFS)) +
+  geom_line(color="blue")
+minam_flow_plot
+
+minam_temp_plot <- ggplot(minam_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+  geom_line(linewidth = 1) +
+  scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+  theme_minimal()
+minam_temp_plot
+
+
+
+saveRDS(ugr_flow_plot, "data/ugr_flow.rds")
+saveRDS(ugr_temp_plot, "data/ugr_temp.rds")
+saveRDS(mdc_flow_plot, "data/mdc_flow.rds")
+saveRDS(mdc_temp_plot, "data/mdc_temp.rds")
+saveRDS(cc_flow_plot, "data/cc_flow.rds")
+saveRDS(cc_temp_plot, "data/cc_temp.rds")
+saveRDS(lostine_flow_plot, "data/los_baker_rd_flow.rds")
+saveRDS(los_ranch_flow_plot, "data/los_ranch_flow.rds")
+saveRDS(los_ranch_temp, "data/los_ranch_temp.rds")
+saveRDS(minam_flow_plot, "data/minam_flow.rds")
+saveRDS(minam_temp_plot, "data/minam_tmep.rds")
+
+
