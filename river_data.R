@@ -7,7 +7,6 @@ library(dataRetrieval)
 library(viridis)
 library(viridisLite)
 
-
 #Mean Daily Flow
 # 1. Compute date range
 # end_date   <- Sys.Date()
