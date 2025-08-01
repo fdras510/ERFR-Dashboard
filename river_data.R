@@ -276,6 +276,6 @@ saveRDS(lostine_flow_plot, "data/los_baker_rd_flow.rds")
 saveRDS(los_ranch_flow_plot, "data/los_ranch_flow.rds")
 saveRDS(los_ranch_temp, "data/los_ranch_temp.rds")
 saveRDS(minam_flow_plot, "data/minam_flow.rds")
-saveRDS(minam_temp_plot, "data/minam_tmep.rds")
+saveRDS(minam_temp_plot, "data/minam_temp.rds")
 
 
