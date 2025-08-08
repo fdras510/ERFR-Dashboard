@@ -11,21 +11,21 @@ library(ggplot2)
 library(janitor)
 library(lubridate)
 
-pat<-Sys.getenv("GITHUB_PAT", "")
-if (identical(pat,"")) {
-  stop("Please set your GITHUB PAT in the environmental variable.")
-}
-
-auth_readRDS <- function(raw_url) {
-  res <- GET(
-    raw_url, 
-    add_headers(Authorization = paste("token",pat))
-  )
-  if (res$status_code !=200) {
-    stop("Failed to GET", raw_url, ":HTTP", res$status_code)
-  }
-  readRDS(rawConnection(content(res, "raw")))
-}
+# pat<-Sys.getenv("GITHUB_PAT", "")
+# if (identical(pat,"")) {
+#   stop("Please set your GITHUB PAT in the environmental variable.")
+# }
+# 
+# auth_readRDS <- function(raw_url) {
+#   res <- GET(
+#     raw_url, 
+#     add_headers(Authorization = paste("token",pat))
+#   )
+#   if (res$status_code !=200) {
+#     stop("Failed to GET", raw_url, ":HTTP", res$status_code)
+#   }
+#   readRDS(rawConnection(content(res, "raw")))
+# }
 
 # Master location list with both weather and river metadata
 location_meta <- list(
@@ -204,7 +204,7 @@ get_openmeteo <- function(lat, lon) {
 #       names_expand = TRUE)
 # }
 antenna_plot <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/antenna_plot.rds"))
-uptime_table <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/uptime_data.rds"))
+timer_tags <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/uptime_data.rds"))
 
 # Fetch OWRD text data using standard headers
 river_data_list <- list(
@@ -272,10 +272,10 @@ ui <- dashboardPage(
       tabItem(tabName = "pit",
               box(width = 12, title = "Daily Detections (Last 30 Days)", status = "primary",
                   "This chart shows the number of unique tags detected per site each day.",
-                  plotOutput("antenna_plot")
+                  plotlyOutput("antenna_plotly", height = "900px")
               ),
               box(width = 12, title = "Daily Uptime Proportion", status = "primary",
-                  "This table shows the proportion of each day that each antenna was operational.",
+                  "This table shows the proportion of each day that each antenna was operational(1.00 represents 100% uptime). ",
                   tableOutput("uptime_table")
               )
       )
@@ -359,21 +359,19 @@ server <- function(input, output, session) {
     ggplot(df, aes(date, precip)) + geom_col(fill = "skyblue") + labs(y = "Precip Probability (%)")
   })
   # PIT Detections plot
-  # output$plot_detections <- renderPlot({
-  #   ggplot(interrogation_df, aes(date, total_tags, fill = site)) +
-  #     geom_col(show.legend = FALSE) +
-  #     facet_wrap(~site, scales = "free_y") +
-  #     labs(title = "Daily PIT Tag Detections", x = "Date", y = "Unique Tags") +
-  #     theme_minimal()
-  # })
-  output$antenna_plot <- renderPlot({ antenna_plot })
-  output$uptime_table <- renderTable({ uptime_table }, rownames = FALSE)
-}
+   output$antenna_plotly <- renderPlotly({
+     p <- ggplot(antenna_plot,aes(x = date, y = total_tags, fill = species)) +
+       geom_bar(position = "stack", stat = "identity") + 
+       labs(x = "Date", y = "Total tags", fill = "Species") +
+       scale_fill_viridis_d(direction = -1) +
+       facet_wrap(~site)
+     ggplotly(p)
+   })
+
   # PIT Uptime table
-#   output$table_uptime <- renderTable({
-#     uptime_df %>% select(site_code, antenna, date, prop_up)
-#   }, rownames = FALSE)
-# }
+   output$uptime_table <- renderTable({
+     timer_tags}, rownames = FALSE)
+ }
 
 shinyApp(ui, server)
 
