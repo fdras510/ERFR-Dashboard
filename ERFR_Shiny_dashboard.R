@@ -11,7 +11,21 @@ library(ggplot2)
 library(janitor)
 library(lubridate)
 
+pat<-Sys.getenv("GITHUB_PAT", "")
+if (identical(pat,"")) {
+  stop("Please set your GITHUB PAT in the environmental variable.")
+}
 
+auth_readRDS <- function(raw_url) {
+  res <- GET(
+    raw_url, 
+    add_headers(Authorization = paste("token",pat))
+  )
+  if (res$status_code !=200) {
+    stop("Failed to GET", raw_url, ":HTTP", res$status_code)
+  }
+  readRDS(rawConnection(content(res, "raw")))
+}
 
 # Master location list with both weather and river metadata
 location_meta <- list(
@@ -86,146 +100,133 @@ get_openmeteo <- function(lat, lon) {
 }
 
 #Interrogation site data
-interrogation_df <- {
-  tmp <- tempfile(fileext = ".csv")
-  GET(
-    'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_interrogation_summary.csv',
-    write_disk(tmp, overwrite = TRUE)
-  )
-  read_csv(tmp, locale = locale(encoding = "UTF-16")) %>%
-    clean_names() %>%
-    mutate(first_time = as.Date(mdy_hms(first_time))) %>%
-    filter(first_time >= Sys.Date() - 30) %>%
-    distinct(site, date = first_time, tag) %>%
-    group_by(site, date) %>%
-    summarise(total_tags = n(), .groups = "drop")
-}
+# interrogation_df <- {
+#   tmp <- tempfile(fileext = ".csv")
+#   GET(
+#     'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_interrogation_summary.csv',
+#     write_disk(tmp, overwrite = TRUE)
+#   )
+#   read_csv(tmp, locale = locale(encoding = "UTF-16")) %>%
+#     clean_names() %>%
+#     mutate(first_time = as.Date(mdy_hms(first_time))) %>%
+#     filter(first_time >= Sys.Date() - 30) %>%
+#     distinct(site, date = first_time, tag) %>%
+#     group_by(site, date) %>%
+#     summarise(total_tags = n(), .groups = "drop")
+# }
 
-uptime_df <- {
-  tmp <- tempfile(fileext = ".csv")
-  GET(
-    'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_timer_tag.csv',
-    write_disk(tmp, overwrite = TRUE)
-  )
-  read_csv(tmp, locale = locale(encoding = "UTF-16")) %>%
-    clean_names() %>%
-    rename(date = metrics) %>%
-    mutate(
-      date = as.Date(date, "%m/%d/%Y"),
-      across(starts_with("timer_tag_count"), as.numeric)
-    ) %>%
-    group_by(site_code, antenna, date) %>%
-    summarise(hourly_counts = sum(rowSums(across(starts_with("timer_tag_count")))), .groups = "drop") %>%
-    mutate(prop_up = pmin(hourly_counts / 24, 1))
-  #Assign sites, antennas, and antenna group
-  antenna_map <- tribble(
-    ~site_code, ~antenna, ~array,
-    "CC5", "01", "Upstream Array",
-    "CC5", "02", "Downstream Array",
-    
-    "CC4", "01", "Upstream Array",
-    "CC4", "02", "Upstream Array",
-    "CC4", "03", "Downstream Array",
-    
-    "CCW", "01", "Top Ladder Antenna",
-    "CCW", "02", "Bottom Laddder Antenna",
-    
-    "CCU", "01", "Upstream Array",
-    "CCU", "02", "Upstream Array",
-    "CCU", "03", "Downstream Array",
-    "CCU", "04", "Downstream Array",
-    
-    "UG4", "01", "Upstream Array",
-    "UG4", "02", "Downstream Array",
-    
-    "UG3", "01", "Upstream Array",
-    "UG3", "02", "Downstream Array",
-    
-    "UGS", "02", "Upstream Array",
-    "UGS", "03", "Upstream Array",
-    "UGS", "04", "Middle Array",
-    "UGS", "05", "Middle Array",
-    "UGS", "06", "Middle Array",
-    "UGS", "07", "Downstream Array",
-    "UGS", "08", "Downstream Array",
-    
-    "MDC", "01", "Upstream Array",
-    "MDC", "02", "Middle Array",
-    "MDC", "03", "Downstream Array",
-    
-    "IR4", "01", "Upstream Array",
-    "IR4", "02", "Upstream Array",
-    "IR4", "03", "Upstream Array",
-    "IR4", "04", "Downstream Array",
-    "IR4", "05", "Downstream Array",
-    "IR4", "06", "Downstream Array",
-    
-    "IR5", "01", "Upstream Array",
-    "IR5", "02", "Upstream Array",
-    "IR5", "03", "Upstream Array",
-    "IR5", "04", "Upstream Array",
-    "IR5", "05", "Downstream Array",
-    "IR5", "06", "Downstream Array",
-    "IR5", "07", "Downstream Array",
-    "IR5", "08", "Downstream Array",
-    
-    "WEN", "01", "Upstream Array",
-    "WEN", "02", "Upstream Array",
-    "WEN", "03", "Downstream Array",
-    "WEN", "04", "Downstream Array"
-  )
-  #Join Timer tag data and antenna map
-  timers3 <- timers3 %>%
-    left_join(antenna_map, by = c("site_code","antenna")) %>%
-    relocate(array, .after = antenna)
-  uptime <- timers3 |>
-    select(site_code,antenna,array,date,prop_up)
-  uptime <- uptime |>
-    mutate(prop_up = round(prop_up,2))
-  uptime <- uptime |>
-    pivot_wider(
-      names_from = date,
-      values_from = prop_up,
-      values_fill = 0,
-      names_expand = TRUE)
-}
-
+# uptime_df <- {
+#   tmp <- tempfile(fileext = ".csv")
+#   GET(
+#     'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_timer_tag.csv',
+#     write_disk(tmp, overwrite = TRUE)
+#   )
+#   read_csv(tmp, locale = locale(encoding = "UTF-16")) %>%
+#     clean_names() %>%
+#     rename(date = metrics) %>%
+#     mutate(
+#       date = as.Date(date, "%m/%d/%Y"),
+#       across(starts_with("timer_tag_count"), as.numeric)
+#     ) %>%
+#     group_by(site_code, antenna, date) %>%
+#     summarise(hourly_counts = sum(rowSums(across(starts_with("timer_tag_count")))), .groups = "drop") %>%
+#     mutate(prop_up = pmin(hourly_counts / 24, 1))
+#   #Assign sites, antennas, and antenna group
+#   antenna_map <- tribble(
+#     ~site_code, ~antenna, ~array,
+#     "CC5", "01", "Upstream Array",
+#     "CC5", "02", "Downstream Array",
+#     
+#     "CC4", "01", "Upstream Array",
+#     "CC4", "02", "Upstream Array",
+#     "CC4", "03", "Downstream Array",
+#     
+#     "CCW", "01", "Top Ladder Antenna",
+#     "CCW", "02", "Bottom Laddder Antenna",
+#     
+#     "CCU", "01", "Upstream Array",
+#     "CCU", "02", "Upstream Array",
+#     "CCU", "03", "Downstream Array",
+#     "CCU", "04", "Downstream Array",
+#     
+#     "UG4", "01", "Upstream Array",
+#     "UG4", "02", "Downstream Array",
+#     
+#     "UG3", "01", "Upstream Array",
+#     "UG3", "02", "Downstream Array",
+#     
+#     "UGS", "02", "Upstream Array",
+#     "UGS", "03", "Upstream Array",
+#     "UGS", "04", "Middle Array",
+#     "UGS", "05", "Middle Array",
+#     "UGS", "06", "Middle Array",
+#     "UGS", "07", "Downstream Array",
+#     "UGS", "08", "Downstream Array",
+#     
+#     "MDC", "01", "Upstream Array",
+#     "MDC", "02", "Middle Array",
+#     "MDC", "03", "Downstream Array",
+#     
+#     "IR4", "01", "Upstream Array",
+#     "IR4", "02", "Upstream Array",
+#     "IR4", "03", "Upstream Array",
+#     "IR4", "04", "Downstream Array",
+#     "IR4", "05", "Downstream Array",
+#     "IR4", "06", "Downstream Array",
+#     
+#     "IR5", "01", "Upstream Array",
+#     "IR5", "02", "Upstream Array",
+#     "IR5", "03", "Upstream Array",
+#     "IR5", "04", "Upstream Array",
+#     "IR5", "05", "Downstream Array",
+#     "IR5", "06", "Downstream Array",
+#     "IR5", "07", "Downstream Array",
+#     "IR5", "08", "Downstream Array",
+#     
+#     "WEN", "01", "Upstream Array",
+#     "WEN", "02", "Upstream Array",
+#     "WEN", "03", "Downstream Array",
+#     "WEN", "04", "Downstream Array"
+#   )
+#   #Join Timer tag data and antenna map
+#   timers3 <- timers3 %>%
+#     left_join(antenna_map, by = c("site_code","antenna")) %>%
+#     relocate(array, .after = antenna)
+#   uptime <- timers3 |>
+#     select(site_code,antenna,array,date,prop_up)
+#   uptime <- uptime |>
+#     mutate(prop_up = round(prop_up,2))
+#   uptime <- uptime |>
+#     pivot_wider(
+#       names_from = date,
+#       values_from = prop_up,
+#       values_fill = 0,
+#       names_expand = TRUE)
+# }
+antenna_plot <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/antenna_plot.rds"))
+uptime_table <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/uptime_data.rds"))
 
 # Fetch OWRD text data using standard headers
-get_owrd_data <- function(station_id) {
-  base_url <- "https://apps.wrd.state.or.us/apps/sw/hydrographs/data.aspx"
-  query <- list(station_nbr = station_id)  # remove format param to fetch raw text
-  resp <- try(GET(base_url, query = query), silent = TRUE)
-  if (inherits(resp, "try-error") || status_code(resp) != 200) return(NULL)
-  
-  # Read raw text and split into lines
-  raw <- content(resp, as = "text", encoding = "UTF-8")
-  lines <- strsplit(raw, "
-?
-")[[1]]
-  # Identify lines starting with station number (digits), comprising the data rows including header
-  data_start <- grep("^station_nbr", lines, ignore.case = TRUE)
-  if (length(data_start) == 0) return(NULL)
-  data_lines <- lines[data_start:length(lines)]
-  
-  # Read data into a data.frame
-  df <- read.csv(text = data_lines, stringsAsFactors = FALSE)
-  names(df) <- tolower(gsub("[° ]", "", names(df)))
-  
-  # Select and rename only relevant columns
-  df <- df %>%
-    select(station_nbr, record_date,
-           flow = matches("instan.*flow_cfs", ignore.case = TRUE),
-           temp = matches("instantaneous_water_temp_c", ignore.case = TRUE),
-           stage = matches("instan.*stage_ft", ignore.case = TRUE),
-           mean_flow = matches("mean_daily_flow_cfs", ignore.case = TRUE)) %>%
-    rename(datetime = record_date)
-  
-  df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S")
-  df <- df[order(df$datetime), ]
-  return(df)
-}
+river_data_list <- list(
+  "Lostine River" = list(los_baker_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_baker_rd_flow.rds")),
+                         los_ranch_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_ranch_flow.rds")),
+                         los_ranch_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_ranch_temp.rds"))),
+  "Minam River" = list(minam_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_flow.rds")),
+                       minam_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_temp.rds"))),
+  "Catherine Creek" = list(cc_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_flow.rds")),
+                           cc_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_temp.rds"))),
+  "Meadow Creek" = list(mdc_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_flow.rds")),
+                        mdc_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_temp.rds"))),
+  "Upper Grande Ronde River" = list(ugr_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_flow.rds")),
+                                    ugr_tmep <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_temp.rds")))
+)
 
+
+
+
+
+
+  
 # UI definition
 ui <- dashboardPage(
   dashboardHeader(title = "Fisheries Dashboard"),
@@ -251,9 +252,12 @@ ui <- dashboardPage(
               )
       ),
       tabItem(tabName = "river",
-              plotOutput("plot_flow"),
-              plotOutput("plot_temp"),
-              plotOutput("plot_stage")
+              fluidRow(
+                box(width = 4, selectInput("river_choice", "Select River:", choices = names(river_data_list))),
+                box(width = 8, status = "primary",
+                    plotOutput("river_flow_plot"),
+                    plotOutput("river_temp_plot"))
+              )
       ),
       tabItem(tabName = "weather",
               fluidRow(
@@ -268,11 +272,11 @@ ui <- dashboardPage(
       tabItem(tabName = "pit",
               box(width = 12, title = "Daily Detections (Last 30 Days)", status = "primary",
                   "This chart shows the number of unique tags detected per site each day.",
-                  plotOutput("plot_detections")
+                  plotOutput("antenna_plot")
               ),
               box(width = 12, title = "Daily Uptime Proportion", status = "primary",
                   "This table shows the proportion of each day that each antenna was operational.",
-                  tableOutput("table_uptime")
+                  tableOutput("uptime_table")
               )
       )
     )
@@ -325,9 +329,15 @@ server <- function(input, output, session) {
   })
   
   # Plot river
-  output$plot_flow <- renderPlot({ df <- river_data(); if(is.null(df)) return(); ggplot(df,aes(datetime,flow))+geom_line()+labs(title="Flow (cfs)") })
-  output$plot_temp <- renderPlot({ df <- river_data(); if(is.null(df)||!"temp"%in%names(df)) return(); ggplot(df,aes(datetime,temp))+geom_line()+labs(title="Water Temp (°C)") })
-  output$plot_stage <- renderPlot({ df <- river_data(); if(is.null(df)||!"stage"%in%names(df)) return(); ggplot(df,aes(datetime,stage))+geom_line()+labs(title="Stage (ft)") })
+  river_selected <- reactive(river_data_list[[input$river_choice]])
+  output$river_flow_plot <- renderPlot({
+    df <- river_selected()$flow
+    ggplot(df, aes(x = datetime, y = Flow)) + geom_line() + labs(title = paste(input$river_choice, "Flow"), y = "cfs")
+  })
+  output$river_temp_plot <- renderPlot({
+    df <- river_selected()$temp
+    ggplot(df, aes(x = datetime, y = Temp)) + geom_line() + labs(title = paste(input$river_choice, "Temp"), y = "°C")
+  })
   
   # Plot weather forecast
   output$plot_weather <- renderPlot({
@@ -349,18 +359,21 @@ server <- function(input, output, session) {
     ggplot(df, aes(date, precip)) + geom_col(fill = "skyblue") + labs(y = "Precip Probability (%)")
   })
   # PIT Detections plot
-  output$plot_detections <- renderPlot({
-    ggplot(interrogation_df, aes(date, total_tags, fill = site)) +
-      geom_col(show.legend = FALSE) +
-      facet_wrap(~site, scales = "free_y") +
-      labs(title = "Daily PIT Tag Detections", x = "Date", y = "Unique Tags") +
-      theme_minimal()
-  })
-  
-  # PIT Uptime table
-  output$table_uptime <- renderTable({
-    uptime_df %>% select(site_code, antenna, date, prop_up)
-  }, rownames = FALSE)
+  # output$plot_detections <- renderPlot({
+  #   ggplot(interrogation_df, aes(date, total_tags, fill = site)) +
+  #     geom_col(show.legend = FALSE) +
+  #     facet_wrap(~site, scales = "free_y") +
+  #     labs(title = "Daily PIT Tag Detections", x = "Date", y = "Unique Tags") +
+  #     theme_minimal()
+  # })
+  output$antenna_plot <- renderPlot({ antenna_plot })
+  output$uptime_table <- renderTable({ uptime_table }, rownames = FALSE)
 }
+  # PIT Uptime table
+#   output$table_uptime <- renderTable({
+#     uptime_df %>% select(site_code, antenna, date, prop_up)
+#   }, rownames = FALSE)
+# }
 
 shinyApp(ui, server)
+
