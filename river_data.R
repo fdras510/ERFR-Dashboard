@@ -159,7 +159,7 @@ los_ranch_inst_flow <- read.csv(inst_flow_url_lostine, sep="\t", row.names=NULL)
 los_ranch_inst_flow <- los_ranch_inst_flow |>
   rename(CFS = record_date,
          Date = station_nbr,
-         Lostine_Ranch)
+         Lostine_Ranch = row.names)
 los_ranch_inst_flow <- los_ranch_inst_flow %>%
   mutate(
     Date = mdy_hm(Date, tz = "America/Los_Angeles"))
