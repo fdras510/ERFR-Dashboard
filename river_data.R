@@ -266,16 +266,16 @@ minam_temp_plot
 
 
 
-saveRDS(ugr_flow_plot, "data/ugr_flow.rds")
-saveRDS(ugr_temp_plot, "data/ugr_temp.rds")
-saveRDS(mdc_flow_plot, "data/mdc_flow.rds")
-saveRDS(mdc_temp_plot, "data/mdc_temp.rds")
-saveRDS(cc_flow_plot, "data/cc_flow.rds")
-saveRDS(cc_temp_plot, "data/cc_temp.rds")
-saveRDS(lostine_flow_plot, "data/los_baker_rd_flow.rds")
-saveRDS(los_ranch_flow_plot, "data/los_ranch_flow.rds")
+saveRDS(ugr_inst_flow, "data/ugr_flow.rds")
+saveRDS(ugr_inst_temp, "data/ugr_temp.rds")
+saveRDS(mdc_inst_flow, "data/mdc_flow.rds")
+saveRDS(mdc_inst_temp, "data/mdc_temp.rds")
+saveRDS(cc_inst_flow, "data/cc_flow.rds")
+saveRDS(cc_inst_temp, "data/cc_temp.rds")
+saveRDS(los_baker_flow, "data/los_baker_rd_flow.rds")
+saveRDS(los_ranch_flow, "data/los_ranch_flow.rds")
 saveRDS(los_ranch_temp, "data/los_ranch_temp.rds")
-saveRDS(minam_flow_plot, "data/minam_flow.rds")
-saveRDS(minam_temp_plot, "data/minam_temp.rds")
+saveRDS(minam_flow, "data/minam_flow.rds")
+saveRDS(minam_temp, "data/minam_temp.rds")
 
 
