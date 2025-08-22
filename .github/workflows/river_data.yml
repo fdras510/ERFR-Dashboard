@@ -2,7 +2,7 @@ name: ERFR Dashboard Daily Update
 
 on:
   schedule:
-    - cron: '0 11 * * *'  # 4:00 AM Pacific = 11:00 UTC
+    - cron: '30 10 * * *'  # 4:00 AM Pacific = 11:00 UTC
   workflow_dispatch:       # (optional) lets you trigger manually
 
 jobs:
