@@ -10,6 +10,8 @@ library(httr)
 library(ggplot2)
 library(janitor)
 library(lubridate)
+library(viridis)
+library(viridisLite)
 
 # pat<-Sys.getenv("GITHUB_PAT", "")
 # if (identical(pat,"")) {
@@ -99,134 +101,40 @@ get_openmeteo <- function(lat, lon) {
   list(daily = daily, current = current)
 }
 
-#Interrogation site data
-# interrogation_df <- {
-#   tmp <- tempfile(fileext = ".csv")
-#   GET(
-#     'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_interrogation_summary.csv',
-#     write_disk(tmp, overwrite = TRUE)
-#   )
-#   read_csv(tmp, locale = locale(encoding = "UTF-16")) %>%
-#     clean_names() %>%
-#     mutate(first_time = as.Date(mdy_hms(first_time))) %>%
-#     filter(first_time >= Sys.Date() - 30) %>%
-#     distinct(site, date = first_time, tag) %>%
-#     group_by(site, date) %>%
-#     summarise(total_tags = n(), .groups = "drop")
-# }
-
-# uptime_df <- {
-#   tmp <- tempfile(fileext = ".csv")
-#   GET(
-#     'https://api.ptagis.org/reporting/reports/fglas25/file/erfr_timer_tag.csv',
-#     write_disk(tmp, overwrite = TRUE)
-#   )
-#   read_csv(tmp, locale = locale(encoding = "UTF-16")) %>%
-#     clean_names() %>%
-#     rename(date = metrics) %>%
-#     mutate(
-#       date = as.Date(date, "%m/%d/%Y"),
-#       across(starts_with("timer_tag_count"), as.numeric)
-#     ) %>%
-#     group_by(site_code, antenna, date) %>%
-#     summarise(hourly_counts = sum(rowSums(across(starts_with("timer_tag_count")))), .groups = "drop") %>%
-#     mutate(prop_up = pmin(hourly_counts / 24, 1))
-#   #Assign sites, antennas, and antenna group
-#   antenna_map <- tribble(
-#     ~site_code, ~antenna, ~array,
-#     "CC5", "01", "Upstream Array",
-#     "CC5", "02", "Downstream Array",
-#     
-#     "CC4", "01", "Upstream Array",
-#     "CC4", "02", "Upstream Array",
-#     "CC4", "03", "Downstream Array",
-#     
-#     "CCW", "01", "Top Ladder Antenna",
-#     "CCW", "02", "Bottom Laddder Antenna",
-#     
-#     "CCU", "01", "Upstream Array",
-#     "CCU", "02", "Upstream Array",
-#     "CCU", "03", "Downstream Array",
-#     "CCU", "04", "Downstream Array",
-#     
-#     "UG4", "01", "Upstream Array",
-#     "UG4", "02", "Downstream Array",
-#     
-#     "UG3", "01", "Upstream Array",
-#     "UG3", "02", "Downstream Array",
-#     
-#     "UGS", "02", "Upstream Array",
-#     "UGS", "03", "Upstream Array",
-#     "UGS", "04", "Middle Array",
-#     "UGS", "05", "Middle Array",
-#     "UGS", "06", "Middle Array",
-#     "UGS", "07", "Downstream Array",
-#     "UGS", "08", "Downstream Array",
-#     
-#     "MDC", "01", "Upstream Array",
-#     "MDC", "02", "Middle Array",
-#     "MDC", "03", "Downstream Array",
-#     
-#     "IR4", "01", "Upstream Array",
-#     "IR4", "02", "Upstream Array",
-#     "IR4", "03", "Upstream Array",
-#     "IR4", "04", "Downstream Array",
-#     "IR4", "05", "Downstream Array",
-#     "IR4", "06", "Downstream Array",
-#     
-#     "IR5", "01", "Upstream Array",
-#     "IR5", "02", "Upstream Array",
-#     "IR5", "03", "Upstream Array",
-#     "IR5", "04", "Upstream Array",
-#     "IR5", "05", "Downstream Array",
-#     "IR5", "06", "Downstream Array",
-#     "IR5", "07", "Downstream Array",
-#     "IR5", "08", "Downstream Array",
-#     
-#     "WEN", "01", "Upstream Array",
-#     "WEN", "02", "Upstream Array",
-#     "WEN", "03", "Downstream Array",
-#     "WEN", "04", "Downstream Array"
-#   )
-#   #Join Timer tag data and antenna map
-#   timers3 <- timers3 %>%
-#     left_join(antenna_map, by = c("site_code","antenna")) %>%
-#     relocate(array, .after = antenna)
-#   uptime <- timers3 |>
-#     select(site_code,antenna,array,date,prop_up)
-#   uptime <- uptime |>
-#     mutate(prop_up = round(prop_up,2))
-#   uptime <- uptime |>
-#     pivot_wider(
-#       names_from = date,
-#       values_from = prop_up,
-#       values_fill = 0,
-#       names_expand = TRUE)
-# }
+#Pit Antenna site data
 antenna_plot <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/antenna_plot.rds"))
 timer_tags <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/uptime_data.rds"))
 
 # Fetch OWRD text data using standard headers
-river_data_list <- list(
-  "Lostine River" = list(los_baker_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_baker_rd_flow.rds")),
-                         los_ranch_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_ranch_flow.rds")),
-                         los_ranch_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_ranch_temp.rds"))),
-  "Minam River" = list(minam_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_flow.rds")),
-                       minam_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_temp.rds"))),
-  "Catherine Creek" = list(cc_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_flow.rds")),
-                           cc_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_temp.rds"))),
-  "Meadow Creek" = list(mdc_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_flow.rds")),
-                        mdc_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_temp.rds"))),
-  "Upper Grande Ronde River" = list(ugr_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_flow.rds")),
-                                    ugr_tmep <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_temp.rds")))
-)
+los_baker_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_baker_rd_flow.rds")) %>%
+  mutate(Station = "Lostine_Baker_Rd")
+#los_ranch_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_ranch_flow.rds")) %>%
+#  mutate(Station = "Lostine_Ranch")
+#lostine_flow = bind_rows(los_baker_flow, los_ranch_flow)
+lostine_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_ranch_temp.rds"))
+minam_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_flow.rds"))
+minam_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_temp.rds"))
+catherine_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_flow.rds"))
+catherine_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_temp.rds"))
+meadow_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_flow.rds"))
+meadow_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_temp.rds"))
+ugr_flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_flow.rds"))
+ugr_temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_temp.rds"))
+
+ # river_data_list <- list(
+ #   "Lostine River" = list(flow = bind_rows(los_baker_flow, los_ranch_flow),
+ #                          temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/los_ranch_temp.rds"))),
+ #   "Minam River" = list(flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_flow.rds")),
+ #                        temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/minam_temp.rds"))),
+ #   "Catherine Creek" = list(flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_flow.rds")),
+ #                            temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/cc_temp.rds"))),
+ #   "Meadow Creek" = list(flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_flow.rds")),
+ #                         temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/mdc_temp.rds"))),
+ #   "Upper Grande Ronde River" = list(flow <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_flow.rds")),
+ #                                     temp <- readRDS(url("https://raw.githubusercontent.com/fdras510/ERFR-Dashboard/main/data/ugr_temp.rds")))
+ # )
 
 
-
-
-
-
-  
 # UI definition
 ui <- dashboardPage(
   dashboardHeader(title = "Fisheries Dashboard"),
@@ -253,10 +161,51 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "river",
               fluidRow(
-                box(width = 4, selectInput("river_choice", "Select River:", choices = names(river_data_list))),
-                box(width = 8, status = "primary",
-                    plotOutput("river_flow_plot"),
-                    plotOutput("river_temp_plot"))
+                # Lostine River
+                box(
+                  title = "Lostine River",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  plotOutput("Lostine_River", height = "250px"),
+                  plotOutput("Lostine_Temperature", height = "250px")
+                ),
+                # Grande Ronde River
+                box(
+                  title = "Grande Ronde River",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12, 
+                  plotOutput("Grande_Ronde_flow", height = "250px"),
+                  plotOutput("Grande_Ronde_Temperature", height = "250px")
+                ),
+                # Meadow Creek
+                box(
+                  title = "Meadow Creek",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  plotOutput("Meadow_Creek_flow", height = "250px"),
+                  plotOutput("Meadow_Creek_Temperature", height = "250px")
+                ),
+                # Catherine Creek
+                box(
+                  title = "Catherine Creek",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  plotOutput("Catherine_Creek_flow", height = "250px"),
+                  plotOutput("Catherine_Creek_Temperature", height = "250px")
+                ),
+                # Minam
+                box(
+                  title = "Minam River",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  plotOutput("Minam_flow", height = "300px"),
+                  plotOutput("Minam_Temperature", height = "300px")
+                )
               )
       ),
       tabItem(tabName = "weather",
@@ -328,15 +277,61 @@ server <- function(input, output, session) {
     )
   })
   
-  # Plot river
-  river_selected <- reactive(river_data_list[[input$river_choice]])
-  output$river_flow_plot <- renderPlot({
-    df <- river_selected()$flow
-    ggplot(df, aes(x = datetime, y = Flow)) + geom_line() + labs(title = paste(input$river_choice, "Flow"), y = "cfs")
+  # Plot river data
+  output$Lostine_River <- renderPlot({
+    ggplot(los_baker_flow, aes(x=Date,y=CFS, color = Station)) +
+      geom_line(color = "blue") + labs(title = "Lostine River at Baker Road", y = "CFS")
+    })
+  output$Lostine_Temperature <-renderPlot({
+    ggplot(lostine_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+      geom_line(linewidth = 1) +
+      scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+      labs(title = "Lostine River Temperature", y = "Temperature (°C)") +
+      theme_minimal()
   })
-  output$river_temp_plot <- renderPlot({
-    df <- river_selected()$temp
-    ggplot(df, aes(x = datetime, y = Temp)) + geom_line() + labs(title = paste(input$river_choice, "Temp"), y = "°C")
+  output$Grande_Ronde_flow <- renderPlot({
+    ggplot(ugr_flow, aes(x=Date,y=CFS)) +
+    geom_line(color = "blue") + labs(title = "Grande Ronde River at Clear Creek Flow", y = "CFS")
+  })
+  output$Grande_Ronde_Temperature <- renderPlot({
+    ggplot(ugr_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+      geom_line(linewidth = 1) +
+      scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+      labs(title = "Grande Ronde River at Clear Creek Temperature", y = "Temperature (°C)") +
+      theme_minimal()
+  })
+  output$Meadow_Creek_flow <- renderPlot({
+    ggplot(meadow_flow, aes(x=Date,y=CFS)) +
+      geom_line(color = "blue") + labs(title = "Meadow Creek below Dark Canyon Flow", y = "CFS")
+  })
+  output$Meadow_Creek_Temperature <- renderPlot({
+    ggplot(meadow_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+      geom_line(linewidth = 1) +
+      scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+      labs(title = "Meadow Creek below Dark Canyon Temperature", y = "Temperature (°C)") +
+    theme_minimal()
+  })
+  output$Catherine_Creek_flow <- renderPlot({
+    ggplot(catherine_flow, aes(x=Date,y=CFS)) +
+      geom_line(color = "blue") + labs(title = "Catherine Creek near Union Flow", y = "CFS")
+  })
+  output$Catherine_Creek_Temperature <- renderPlot({
+    ggplot(catherine_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+      geom_line(linewidth = 1) +
+      scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+      labs(title = "Catherine Creek near Union Temperature", y = "Temperature (°C)") +
+    theme_minimal()
+  })
+  output$Minam_flow <- renderPlot({
+    ggplot(minam_flow, aes(x=Date,y=CFS)) +
+      geom_line(color = "blue") + labs(title = "Minam River Flow", y = "CFS")
+  })
+  output$Minam_Temperature <- renderPlot({
+    ggplot(minam_temp, aes(x=Date, y=Temp_C, color = Temp_C)) +
+      geom_line(linewidth = 1) +
+      scale_color_viridis_c(option = "H", name = "Temperature (°C)") +
+      labs(title = "Minam River Temperature", y = "Temperature (°C)") +
+    theme_minimal()
   })
   
   # Plot weather forecast
